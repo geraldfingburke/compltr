@@ -20,13 +20,13 @@
                     </v-row>
                     <v-row class="text-center justify-center py-5">
                         <v-col cols="12" md="5">
-                            <v-btn width="60%" color="primary" elevation="10">Sign Up</v-btn>
+                            <v-btn width="60%" color="primary" elevation="10" @click="signup()">Sign Up</v-btn>
                         </v-col>
 
                     </v-row>
                     <v-row class="text-center justify-center py-5">
                         <v-col cols="12" md="5">
-                            <v-btn width="60%" elevation="10">Login</v-btn>
+                            <v-btn width="60%" elevation="10" @click="login()">Login</v-btn>
                         </v-col>
                     </v-row>
                 </v-container>
@@ -36,11 +36,41 @@
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   data() {
     return {
       userEmail: "",
       userPassword: ""
+    }
+  },
+  methods: {
+    signup() {
+        axios.post("https://geraldburke.dev/apis/todo-app/", {
+            action: "signup",
+            userEmail: this.userEmail,
+            userPassword: this.userPassword
+        })
+        .then(function (response) {
+            console.log(response);
+        })
+        .catch(function(error) {
+            console.log(error);
+        });
+    },
+    login() {
+        axios.post("https://geraldburke.dev/apis/todo-app/", {
+            action: "login",
+            userEmail: this.userEmail,
+            userPassword: this.userPassword
+        })
+        .then(function (response) {
+            console.log(response);
+        })
+        .catch(function(error) {
+            console.log(error);
+        });
     }
   }
 }
