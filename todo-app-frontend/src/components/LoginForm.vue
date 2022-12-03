@@ -18,6 +18,7 @@
                                 required></v-text-field>
                         </v-col>
                     </v-row>
+                    <p v-if="userError != ''" class="text-center red--text">{{ userError }}</p>
                     <v-row class="text-center justify-center py-5">
                         <v-col cols="12" md="5">
                             <v-btn width="60%" color="primary" elevation="10" @click="signup()">Sign Up</v-btn>
@@ -39,39 +40,38 @@
 import axios from 'axios';
 
 export default {
-  data() {
-    return {
-      userEmail: "",
-      userPassword: ""
-    }
-  },
-  methods: {
-    signup() {
-        axios.post("https://geraldburke.dev/apis/todo-app/", {
-            action: "signup",
-            userEmail: this.userEmail,
-            userPassword: this.userPassword
-        })
-        .then(function (response) {
-            console.log(response);
-        })
-        .catch(function(error) {
-            console.log(error);
-        });
+    data() {
+        return {
+            userEmail: "",
+            userPassword: "",
+            userError: ""
+        }
     },
-    login() {
-        axios.post("https://geraldburke.dev/apis/todo-app/", {
-            action: "login",
-            userEmail: this.userEmail,
-            userPassword: this.userPassword
-        })
-        .then(function (response) {
-            console.log(response);
-        })
-        .catch(function(error) {
-            console.log(error);
-        });
+    methods: {
+        async signup() {
+            const user = await axios.post("https://geraldburke.dev/apis/todo-app/", {
+                action: "signup",
+                userEmail: this.userEmail,
+                userPassword: this.userPassword
+            });
+            if (user.data == "User Exists") {
+                this.userError = "Email already in use!";
+            } else {
+                this.$store.commit("LOGIN", user.data);
+            }
+        },
+        async login() {
+            const user = await axios.post("https://geraldburke.dev/apis/todo-app/", {
+                action: "login",
+                userEmail: this.userEmail,
+                userPassword: this.userPassword
+            });
+            if (user.data == "Invalid Credentials") {
+                this.userError = "Invalid Credentials!";
+            } else {
+                this.$store.commit("LOGIN", user.data);
+            }
+        }
     }
-  }
 }
 </script>

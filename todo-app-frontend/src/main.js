@@ -1,10 +1,19 @@
 import Vue from 'vue'
 import App from './App.vue'
 import vuetify from './plugins/vuetify'
+import store from './store'
+import Vuex from 'vuex'
+
+Vue.prototype.$store = store
 
 Vue.config.productionTip = false
 
+Vue.use(Vuex);
+
 new Vue({
   vuetify,
+  store,
   render: h => h(App)
-}).$mount('#app')
+}).$mount('#app');
+
+
