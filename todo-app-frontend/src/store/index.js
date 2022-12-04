@@ -6,11 +6,15 @@ Vue.use(Vuex)
 
 export default new Vuex.Store({
     state: {
-        userID: 0
+        userID: 0,
+        todos: []
     },
     getters: {
         userID(state) {
             return state.userID;
+        },
+        todos(state) {
+            return state.todos;
         }
     },
     mutations: {
@@ -19,6 +23,9 @@ export default new Vuex.Store({
         },
         async LOGOUT(state) {
             state.userID = 0;
+        },
+        async SETTODOS(state, todos) {
+            state.todos = todos;
         }
     },
     plugins: [createPersistedState()]

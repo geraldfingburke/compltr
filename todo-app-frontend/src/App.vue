@@ -3,6 +3,7 @@
     <AppHeader />
     <LoginForm class="my-auto" v-if="userID == '0'"/>
     <AddTodoForm />
+    <TodoList />
     <AppFooter />
   </v-app>
 </template>
@@ -12,6 +13,7 @@ import AppHeader from "./components/AppHeader.vue"
 import AppFooter from "./components/AppFooter.vue"
 import LoginForm from "./components/LoginForm.vue"
 import AddTodoForm from "./components/AddTodoForm.vue"
+import TodoList from "./components/TodoList.vue"
 import { mapGetters } from "vuex";
 
 export default {
@@ -21,7 +23,8 @@ export default {
     AppHeader,
     AppFooter,
     LoginForm,
-    AddTodoForm
+    AddTodoForm,
+    TodoList
   },
 
   data: () => ({
