@@ -1,12 +1,11 @@
 <template>
-    <v-data-table :headers="headers" :items="todos" class="elevation-5">
+    <v-data-table :headers="headers" :items="todos" class="elevation-5 mt-3">
         <template v-slot:top>
-            <v-toolbar flat>
+            <v-toolbar flat class="py-5">
                 <v-dialog v-model="dialog" max-width="500px">
                     <template v-slot:activator="{ on, attrs }">
                         <v-select :items="filterSelect" v-model="todosFilterValue" label="Status"></v-select>
-                        <v-spacer></v-spacer>
-                        <v-btn color="primary" class="mb-2 align--right" v-bind="attrs" v-on="on">
+                        <v-btn color="primary" class="mb-6" v-bind="attrs" v-on="on">
                             New Todo
                         </v-btn>
                     </template>

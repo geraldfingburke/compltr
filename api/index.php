@@ -3,17 +3,19 @@ header("Access-Control-Allow-Headers: Authorization, Content-Type");
 header("Access-Control-Allow-Origin: *");
 header('content-type: application/json; charset=utf-8');
 
-function get_pdo() {
-  require "dbConfig.php";
-  
-  $dsn = "mysql:dbname=".DB_NAME.";host=".DB_HOST;
-  $user = DB_USER;
-  $pass = DB_PASS;
-  
-  return new PDO($dsn, $user, $pass);
+function get_pdo()
+{
+    require "dbConfig.php";
+
+    $dsn = "mysql:dbname=" . DB_NAME . ";host=" . DB_HOST;
+    $user = DB_USER;
+    $pass = DB_PASS;
+
+    return new PDO($dsn, $user, $pass);
 }
 
-function signup_user($userEmail, $userPassword) {
+function signupUser($userEmail, $userPassword)
+{
     $dbh = get_pdo();
 
     // Check for existing registration
@@ -22,15 +24,15 @@ function signup_user($userEmail, $userPassword) {
     $stmt->execute();
 
     $results = $stmt->fetchAll();
-  
-    if(count($results) > 0) {
-      echo "User Exists";
-      die();
+
+    if (count($results) > 0) {
+        echo json_encode("User Exists");
+        die();
     }
 
     $stmt = $dbh->prepare("INSERT INTO users (userEmail, passwordHash, joinDate) VALUES (:userEmail_value, :passwordHash_value, :joinDate_value)");
     $stmt->bindValue(":userEmail_value", $userEmail, PDO::PARAM_STR);
-    $stmt->bindValue(":passwordHash_value", password_hash($userPassword, PASSWORD_BCRYPT), PDO::PARAM_INT);
+    $stmt->bindValue(":passwordHash_value", password_hash($userPassword, PASSWORD_BCRYPT), PDO::PARAM_STR);
     $stmt->bindValue(":joinDate_value", date("Y/m/d"), PDO::PARAM_STR);
     $stmt->execute();
 
@@ -38,7 +40,8 @@ function signup_user($userEmail, $userPassword) {
     die();
 }
 
-function login_user($userEmail, $userPassword) {
+function loginUser($userEmail, $userPassword)
+{
     $dbh = get_pdo();
 
     $stmt = $dbh->prepare("SELECT passwordHash, userID FROM users WHERE userEmail = :userEmail_value");
@@ -48,24 +51,31 @@ function login_user($userEmail, $userPassword) {
     $results = $stmt->fetchAll();
 
     if (password_verify($userPassword, $results[0]["passwordHash"])) {
-        return $results[0]["userID"];
+        return json_encode($results[0]["userID"]);
     }
-    return NULL;
+    return json_encode("Invalid Credentials");
 }
 
-function get_todos($userID) {
+function getTodos($userID)
+{
     $dbh = get_pdo();
 
     $stmt = $dbh->prepare("SELECT todoID, title, description, dueDate, complete FROM todos WHERE userID = :userID_value ORDER BY dueDate");
     $stmt->bindValue(":userID_value", $userID, PDO::PARAM_INT);
     $stmt->execute();
-    
-    $results = $stmt->fetchAll();
 
-    return json_encode($results);
+    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $json = array();
+
+    foreach ($results as $result) {
+        array_push($json, ["todoID" => $result["todoID"], "title" => $result["title"], "description" => $result["description"], "dueDate" => $result["dueDate"], "complete" => $result["complete"] == "0" ? false : true]);
+    }
+    return json_encode($json);
 }
 
-function make_todo($userID, $title, $description = NULL, $dueDate = NULL) {
+function makeTodo($userID, $title, $description = null, $dueDate = null)
+{
     $dbh = get_pdo();
 
     $stmt = $dbh->prepare("INSERT INTO todos (userID, title, description, dueDate) VALUES (:userID_value, :title_value, :description_value, :dueDate_value)");
@@ -75,41 +85,38 @@ function make_todo($userID, $title, $description = NULL, $dueDate = NULL) {
     $stmt->bindValue(":dueDate_value", $dueDate, PDO::PARAM_STR);
     $stmt->execute();
 
-    return;
+    return json_encode("Success");
 }
 
-function change_complete_status_todo($todoID, $complete_status) {
+function changeCompleteStatusTodo($todoID, $complete)
+{
     $dbh = get_pdo();
 
-    $stmt = $dbh->prepare("UPDATE todos SET completed = :complete_value WHERE todoID = :todoID_value");
-    $stmt->bindValue(":complete_value", $complete_status, PDO::PARAM_INT);
+    $stmt = $dbh->prepare("UPDATE todos SET complete = :complete_value WHERE todoID = :todoID_value");
+    $stmt->bindValue(":complete_value", $complete, PDO::PARAM_INT);
     $stmt->bindValue(":todoID_value", $todoID, PDO::PARAM_INT);
     $stmt->execute();
 
-    return;
+    return json_encode("Success");
 }
 
-function update_todo($todoID, $title = NULL, $description = NULL, $dueDate = NULL) {
+function updateTodo($todoID, $title, $description, $dueDate)
+{
     $dbh = get_pdo();
 
-    $query = "UPDATE todos SET" . "" . $title == NULL ? "" : " title = :title_value " . "" . $description == NULL ? "" : " description = :description_value " . "" . $dueDate == NULL ? "" : " dueDate = :dueDate_value " . "" . " WHERE todoID = :todoID_value" ;
-    $stmt = $dbh->prepare($query);
+    $stmt = $dbh->prepare("UPDATE todos SET title = :title_value, description = :description_value, dueDate = :dueDate_value WHERE todoID = :todoID_value");
     $stmt->bindValue(":todoID_value", $todoID, PDO::PARAM_INT);
-    if ($title != NULL) {
-        $stmt->bindValue(":title_value", $title, PDO::PARAM_STR);
-    }
-    if ($description != NULL) {
-        $stmt->bindValue(":description_value", $description, PDO::PARAM_STR);
-    }
-    if ($dueDate != NULL) {
-        $stmt->bindValue(":dueDate_value", $dueDate, PDO::PARAM_STR);
-    }
+    $stmt->bindValue(":title_value", $title, PDO::PARAM_STR);
+    $stmt->bindValue(":description_value", $description, PDO::PARAM_STR);
+    $stmt->bindValue(":dueDate_value", $dueDate, PDO::PARAM_STR);
+
     $stmt->execute();
 
-    return;
+    return json_encode("Success");
 }
 
-function delete_todo($todoID) {
+function deleteTodo($todoID)
+{
     $dbh = get_pdo();
 
     $stmt = $dbh->prepare("DELETE FROM todos WHERE todoID = :todoID_value");
@@ -119,54 +126,45 @@ function delete_todo($todoID) {
     return;
 }
 
-// sign up
-if ($_REQUEST["action"] == "signup") {
-    if($_REQUEST["user_Email"] && $_REQUEST["user_Password"]) {
-        echo signup_user($_REQUEST["user_Email"], $_REQUEST["user_Password"]);
-        die();
-    }
-    echo "Inavlid Params";
-    die();
-}
-// log in
-if ($_REQUEST["action"] == "login") {
-    if ($_REQUEST["user_Email"] && $_REQUEST["user_Password"]) {
-        echo login_user($_REQUEST["user_Email"], $_REQUEST["user_Password"]);
-        die();
-    }
-    echo "Invalid Params";
-    die();
-}
+// Allows us to read Axios request object as request data
+$json = file_get_contents('php://input');
 
-// get todos
-if ($_REQUEST["action"] == "getTodos") {
-    if($_REQUEST["userID"]) {
-        echo $getTodos($_REQUEST["userID"]);
+$data = json_decode($json, true);
+
+switch ($data["action"]) {
+    case "signup":
+        if ($data["userEmail"] && $data["userPassword"]) {
+            signupUser($data["userEmail"], $data["userPassword"]);
+            die();
+        }
+        echo "Inavlid Params";
         die();
-    }
-    echo "Invalid Params";
-    die();
+    case "login":
+        if ($data["userEmail"] && $data["userPassword"]) {
+            echo loginUser($data["userEmail"], $data["userPassword"]);
+            die();
+        }
+        echo "Invalid Params";
+        die();
+    case "getTodos":
+        if ($data["userID"]) {
+            echo getTodos($data["userID"]);
+            die();
+        }
+        echo json_encode("Invalid Params");
+        die();
+    case "makeTodo":
+        echo makeTodo($data["userID"], $data["title"], isset($data["description"]) ? $data["description"] : null, isset($data["dueDate"]) ? $data["dueDate"] : null);
+        die();
+    case "changeCompleteStatusTodo":
+        echo changeCompleteStatusTodo($data["todoID"], $data["complete"]);
+        die();
+    case "updateTodo":
+        echo updateTodo($data["todoID"], $data["title"], $data["description"], $data["dueDate"]);
+        die();
+    case "deleteTodo":
+        deleteTodo($data["todoID"]);
+        die();
+    default:
+        die();
 }
-
-// make todo
-if($_REQUEST["action"] == "makeTodo") {
-    echo $makeTodo($_REQUEST["userID"], $_REQUEST["title"], isset($_REQUEST["description"]) ? $_REQUEST["description"] : NULL, isset($_REQUEST["dueDate"]) ? $_REQUEST["dueDate"] : NULL);
-    die();
-}
-// complete todo
-if($_REQUEST["action"] == "changeCompleteStatusTodo") {
-    $change_complete_status_todo($_REQUEST["todoID"], $_REQUEST["completeStatus"]);
-    die();
-}
-// update todo
-if($_REQUEST["action"] == "updateTodo") {
-    $update_todo($_REQUEST["userID"], isset($_REQUEST["title"]) ? $_REQUEST["title"] : NULL, isset($_REQUEST["description"]) ? $_REQUEST["description"] : NULL, isset($_REQUEST["dueDate"]) ? $_REQUEST["dueDate"] : NULL);
-    die();
-}
-// delete todo
-if($_REQUEST["action"] == "deleteTodo") {
-    $delete_todo($_REQUEST["todoID"]);
-    die();
-}
-
-?>
