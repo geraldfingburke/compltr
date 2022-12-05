@@ -1,10 +1,12 @@
 <template>
     <v-data-table :headers="headers" :items="todos" class="elevation-5">
-        <template v-slot: top>
+        <template v-slot:top>
             <v-toolbar flat>
                 <v-dialog v-model="dialog" max-width="500px">
                     <template v-slot:activator="{ on, attrs }">
-                        <v-btn color="primary" class="mb-2" v-bind="attrs" v-on="on">
+                        <v-select :items="filterSelect" v-model="todosFilterValue" label="Status"></v-select>
+                        <v-spacer></v-spacer>
+                        <v-btn color="primary" class="mb-2 align--right" v-bind="attrs" v-on="on">
                             New Todo
                         </v-btn>
                     </template>
@@ -15,15 +17,18 @@
                         <v-card-text>
                             <v-container>
                                 <v-row>
-                                    <v-col cols="12" sm="6" md="4">
-                                        <v-text-field v-model="editedItem.title" label="todo">
+                                    <v-col cols="12" v-if="hasError">
+                                        <p color="red" class="text--center">{{ errorMessage }}</p>
+                                    </v-col>
+                                    <v-col cols="12">
+                                        <v-text-field v-model="editedItem.title" label="Todo">
                                         </v-text-field>
                                     </v-col>
-                                    <v-col cols="12" sm="6" md="4">
-                                        <v-text-field v-model="editedItem.description" label="description">
+                                    <v-col cols="12">
+                                        <v-text-field v-model="editedItem.description" label="Description">
                                         </v-text-field>
                                     </v-col>
-                                    <v-col cols="12" sm="6" md="4">
+                                    <v-col cols="12">
                                         <v-menu ref="menu" v-model="menu" :close-on-content-click="false"
                                             :return-value.sync="date" transition="scale-transition" offset-y
                                             min-width="auto">
@@ -50,7 +55,10 @@
                             <v-btn color="red" text @click="close">
                                 Cancel
                             </v-btn>
-                            <v-btn color="primary" text @click="updateTodo">
+                            <v-btn v-if="(editedIndex == -1)" color="primary" text @click="makeTodo">
+                                Create
+                            </v-btn>
+                            <v-btn v-else color="primary" text @click="updateTodo">
                                 Update
                             </v-btn>
                         </v-card-actions>
@@ -66,7 +74,7 @@
                             <v-btn color="red" text @click="closeDelete">
                                 Cancel
                             </v-btn>
-                            <v-btn color="primary" text @click="deleteTodo">
+                            <v-btn color="primary" text @click="deleteTodoRequest">
                                 OK
                             </v-btn>
                             <v-spacer></v-spacer>
@@ -92,7 +100,8 @@
             </v-simple-checkbox>
         </template>
         <template v-slot:[`item.edit`]="{ item }">
-            <v-icon small color="primary" class="mr-2" @click="editTodo(item)">mdi-pencil</v-icon>
+            <v-icon v-if="(item.complete != true)" small color="primary" class="mr-2"
+                @click="editTodo(item)">mdi-pencil</v-icon>
             <v-icon small color="red" @click="deleteTodo(item)">mdi-delete</v-icon>
         </template>
     </v-data-table>
@@ -107,7 +116,138 @@ export default {
         return {
             dialog: false,
             dialogDelete: false,
-            headers: [
+            editedIndex: -1,
+            editedItem: {
+                todoID: "",
+                title: "",
+                description: "",
+                dueDate: "",
+                complete: ""
+            },
+            defaultItem: {
+                todoID: "",
+                title: "",
+                description: "",
+                dueDate: "",
+                complete: "0"
+            },
+            date: "",
+            menu: false,
+            hasError: false,
+            errorMessage: "",
+            filterSelect: [
+                { text: "All", value: null },
+                { text: "Complete", value: true },
+                { text: "Pending", value: false }
+            ],
+            todosFilterValue: null
+        }
+    },
+    methods: {
+        editTodo(todo) {
+            this.editedIndex = this.todos.indexOf(todo);
+            this.editedItem = Object.assign({}, todo);
+            this.dialog = true;
+        },
+        deleteTodo(todo) {
+            this.editedIndex = this.todos.indexOf(todo);
+            this.editedItem = Object.assign({}, todo);
+            this.dialogDelete = true;
+        },
+        async deleteTodoRequest() {
+            await axios.post("https://geraldburke.dev/apis/todo-app/", {
+                action: "deleteTodo",
+                userID: this.userID,
+                todoID: this.editedItem.todoID,
+            });
+            this.$store.dispatch("getTodos");
+            this.editedItem = {}
+            this.dialogDelete = false;
+        },
+        close() {
+            this.dialog = false;
+            this.$nextTick(() => {
+                this.editedItem = Object.assign({}, this.defaultItem);
+                this.editedIndex = -1;
+            });
+            this.hasError = false;
+            this.errorMessage = "";
+        },
+        closeDelete() {
+            this.dialogDelete = false;
+            this.$nextTick(() => {
+                this.editedItem = Object.assign({}, this.defaultItem);
+                this.editedIndex = -1;
+            });
+        },
+        formatDateUS(date) {
+            if (!date) {
+                return "";
+            }
+
+            let newDate = date.split("-");
+            newDate = newDate[1] + "/" + newDate[2] + "/" + newDate[0];
+            return newDate;
+        },
+        async makeTodo() {
+            if (!this.editedItem.title) {
+                this.hasError = true;
+                this.errorMessage = "A title is required!";
+                return;
+            }
+            await axios.post("https://geraldburke.dev/apis/todo-app/", {
+                action: "makeTodo",
+                userID: this.userID,
+                title: this.editedItem.title,
+                description: this.editedItem.description == "" ? null : this.editedItem.description,
+                dueDate: this.editedItem.dueDate == "" ? null : this.editedItem.dueDate
+            });
+            this.$store.dispatch("getTodos");
+            this.editedItem = this.defaultItem;
+            this.dialog = false;
+        },
+        async changeCompleteStatus(todoID, complete) {
+            complete = complete == true ? "1" : "0";
+            await axios.post("https://geraldburke.dev/apis/todo-app/", {
+                action: "changeCompleteStatusTodo",
+                todoID: todoID,
+                complete: complete
+            });
+        },
+        async updateTodo() {
+            if (!this.editedItem.title) {
+                this.hasError = true;
+                this.errorMessage = "A title is required!";
+                return;
+            }
+            await axios.post("https://geraldburke.dev/apis/todo-app/", {
+                action: "updateTodo",
+                todoID: this.editedItem.todoID,
+                title: this.editedItem.title,
+                description: this.editedItem.description,
+                dueDate: this.editedItem.dueDate
+            });
+            this.$store.dispatch("getTodos");
+            this.editedItem = this.defaultItem;
+            this.dialog = false;
+        },
+        completeFilter(value) {
+            if (this.todosFilterValue == null) {
+                return true;
+            }
+            return value == this.todosFilterValue;
+        }
+    },
+    computed: {
+        ...mapGetters({
+            userID: "userID",
+            todos: "todos"
+        }),
+        dialogFormTitle() {
+            return this.editedIndex == -1 ? "New Todo" : "Edit Todo";
+        },
+        headers() {
+            return [
                 {
                     text: "Todo",
                     sortable: false,
@@ -125,7 +265,8 @@ export default {
                 {
                     text: "Complete",
                     align: "center",
-                    value: "complete"
+                    value: "complete",
+                    filter: this.completeFilter
                 },
                 {
                     text: "Edit",
@@ -133,90 +274,7 @@ export default {
                     value: "edit",
                     sortable: "false"
                 }
-            ],
-            editedIndes: -1,
-            editedItem: {
-                todoID: "",
-                title: "",
-                description: "",
-                dueDate: "",
-                complete: ""
-            },
-            defaultItem: {
-                todoID: "",
-                title: "",
-                description: "",
-                dueDate: "",
-                complete: "0"
-            },
-            date: "",
-            menu: false
-        }
-    },
-    methods: {
-        editTodo(todo) {
-            this.editedIndex = this.todos.indexOf(todo);
-            this.editedItem = Object.assign({}, todo);
-            this.dialog = true;
-        },
-        deleteTodo(todo) {
-            this.editedIndex = this.todos.indexOf(todo);
-            this.editedItem = Object.assign({}, todo);
-            this.dialogDelete = true;
-        },
-        updateTodo() {
-            // get index and todo id
-            // make the edit call in axios
-            return;
-        },
-        close() {
-            this.dialog = false;
-            this.$nextTick(() => {
-                this.editedItem = Object.assign({}, this.defaultItem);
-                this.editedIndex = -1;
-            });
-        },
-        closeDelete() {
-            this.dialogDelete = false;
-            this.$nextTick(() => {
-                this.editedItem = Object.assign({}, this.defaultItem);
-                this.editedIndex = -1;
-            });
-        },
-        formatDateUS(date) {
-            let newDate = date.split("-");
-            newDate = newDate[1] + "/" + newDate[2] + "/" + newDate[0];
-            return newDate;
-        },
-        async addTodo() {
-            axios.post("https://geraldburke.dev/apis/todo-app/", {
-                action: "makeTodo",
-                userID: this.userID,
-                title: this.title,
-                description: this.description == "" ? null : this.description,
-                dueDate: this.dueDate == "" ? null : this.dueDate
-            });
-            this.title = "";
-            this.description = "";
-            this.dueDate = "";
-            this.$store.dispatch("getTodos");
-        },
-        async changeCompleteStatus(todoID, complete) {
-            complete = complete == true ? "1" : "0";
-            axios.post("https://geraldburke.dev/apis/todo-app/", {
-                action: "changeCompleteStatusTodo",
-                todoID: todoID,
-                complete: complete
-            });
-        }
-    },
-    computed: {
-        ...mapGetters({
-            userID: "userID",
-            todos: "todos"
-        }),
-        dialogFormTitle() {
-            return this.editedIndex == -1 ? "New Todo" : "Edit Todo";
+            ]
         }
     },
     watch: {
