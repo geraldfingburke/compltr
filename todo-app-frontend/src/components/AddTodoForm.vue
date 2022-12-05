@@ -56,6 +56,7 @@ export default {
             this.title = "";
             this.description = "";
             this.dueDate = "";
+            this.$store.dispatch("getTodos");
         }
     },
     computed: {

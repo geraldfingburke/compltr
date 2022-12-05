@@ -1,11 +1,13 @@
 <template>
     <v-data-table :headers="headers" :items="todos">
-
+        <template v-slot:[`item.complete`]="{ item }">
+            <v-simple-checkbox v-model="item.complete" true-value="1" false-value="0">
+            </v-simple-checkbox>
+        </template>
     </v-data-table>
 </template>
 
 <script>
-import axios from 'axios'
 import { mapGetters } from 'vuex';
 
 export default {
@@ -14,13 +16,12 @@ export default {
             headers: [
                     {
                         text: "Todo",
-                        align: "Start",
-                        sortable: "false",
+                        sortable: false,
                         value: "title"
                     },
                     {
                         text: "Description",
-                        sortable: "false",
+                        sortable: false,
                         value: "description"
                     },
                     {
@@ -29,19 +30,11 @@ export default {
                     },
                     {
                         text: "Complete",
+                        align: "center",
                         value: "complete"
                     }
                 ]
             }
-    },
-    methods: {
-        async getTodos() {
-            const todoList = await axios.post("https://geraldburke.dev/apis/todo-app/", {
-                action: "getTodos",
-                userID: this.userID
-            });
-            this.$store.commit("SETTODOS", todoList.data);
-        }
     },
     computed: {
         ...mapGetters({
@@ -50,7 +43,7 @@ export default {
         })
     },
     created () {
-        this.getTodos();
+        this.$store.dispatch("getTodos");
     }
 }
 </script>
