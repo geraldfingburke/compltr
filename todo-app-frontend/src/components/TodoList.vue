@@ -88,7 +88,7 @@
             <p v-else>{{ formatDateUS(item.dueDate) }}</p>
         </template>
         <template v-slot:[`item.complete`]="{ item }">
-            <v-simple-checkbox v-model="item.complete">
+            <v-simple-checkbox v-model="item.complete" @click="changeCompleteStatus(item.todoID, item.complete)">
             </v-simple-checkbox>
         </template>
         <template v-slot:[`item.edit`]="{ item }">
@@ -200,6 +200,14 @@ export default {
             this.description = "";
             this.dueDate = "";
             this.$store.dispatch("getTodos");
+        },
+        async changeCompleteStatus(todoID, complete) {
+            complete = complete == true ? "1" : "0";
+            axios.post("https://geraldburke.dev/apis/todo-app/", {
+                action: "changeCompleteStatusTodo",
+                todoID: todoID,
+                complete: complete
+            });
         }
     },
     computed: {
