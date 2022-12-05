@@ -45,19 +45,7 @@ export default {
         }
     },
     methods: {
-        async addTodo() {
-            axios.post("https://geraldburke.dev/apis/todo-app/", {
-                action: "makeTodo",
-                userID: this.userID,
-                title: this.title,
-                description: this.description == "" ? null : this.description,
-                dueDate: this.dueDate == "" ? null : this.dueDate
-            });
-            this.title = "";
-            this.description = "";
-            this.dueDate = "";
-            this.$store.dispatch("getTodos");
-        }
+
     },
     computed: {
         ...mapGetters({

@@ -36,8 +36,7 @@ export default new Vuex.Store({
                 action: "getTodos",
                 userID: context.getters.userID
             });
-            console.log(todoList.data);
-            context.commit("SETTODOS", todoList.data)
+            context.commit("SETTODOS", todoList.data);
         }
     },
     plugins: [createPersistedState()]

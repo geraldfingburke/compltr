@@ -1,10 +1,19 @@
 <template>
   <v-app>
-    <AppHeader />
-    <LoginForm class="my-auto" v-if="userID == '0'"/>
-    <AddTodoForm />
-    <TodoList />
-    <AppFooter />
+    <v-container>
+      <v-row>
+        <AppHeader />
+      </v-row>
+      <v-row class="mt-16">
+        <v-col cols="12">
+          <LoginForm class="mt-16" v-if="userID == '0'"/>
+          <TodoList class="my-auto" v-if="userID != '0'"/>
+        </v-col>
+      </v-row>
+      <v-row>
+        <AppFooter />
+      </v-row>
+    </v-container>
   </v-app>
 </template>
 
@@ -12,7 +21,6 @@
 import AppHeader from "./components/AppHeader.vue"
 import AppFooter from "./components/AppFooter.vue"
 import LoginForm from "./components/LoginForm.vue"
-import AddTodoForm from "./components/AddTodoForm.vue"
 import TodoList from "./components/TodoList.vue"
 import { mapGetters } from "vuex";
 
@@ -23,7 +31,6 @@ export default {
     AppHeader,
     AppFooter,
     LoginForm,
-    AddTodoForm,
     TodoList
   },
 

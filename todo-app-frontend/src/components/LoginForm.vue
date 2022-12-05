@@ -70,6 +70,7 @@ export default {
                 this.userError = "Invalid Credentials!";
             } else {
                 this.$store.commit("LOGIN", user.data);
+                this.$store.dispatch("getTodos");
             }
         }
     }
